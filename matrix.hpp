@@ -92,6 +92,9 @@ public:
 
     //Finds and returns the determinant
     int  findDeterminant(void);
+
+    // Uses diagonal values to find eigenvalues
+    void findEigenValues(void);
 };
 
 
