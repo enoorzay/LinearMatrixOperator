@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <queue>
 #include <stack>
+#include <math.h>       
 using namespace std;
 
 
@@ -20,29 +21,36 @@ class matrix {
 
 
 public:
-    bool debug; // whether debug messages are on
-	int rows;  
-	int columns;
-    int totalpivotcols; 
-    double ** nums; // Matrix structure 
-    int solnrows;   // Keeps track of reduced rows
-    double ** inverse;  // Structure for inverse
-    bool inverting;     // Whether we are looking for an inverse
-    bool invertible;    
+      bool debug; // whether debug messages are on
+	    int rows;
+	    int columns;
+      int totalpivotcols;
+      double ** nums; // Matrix structure
+      int solnrows;   // Keeps track of reduced rows
+      double ** inverse;  // Structure for inverse
+      bool inverting;     // Whether we are looking for an inverse
+      bool invertible;
+      bool augmented;
+      bool findingdet;
+      int totalflips;
+      string name;    // used to identify
+      vector<double> pivotelements;
+      matrix(void);
 
-    matrix(void);
-
-// Constructor, r= rows c = columns.. Debugging = choice of debug messages
-    matrix(double r, double c, bool debugging);
+// Constructor, n = names r= rows c = columns.. Debugging = choice of debug messages
+    matrix(string n, int r, int c, bool debugging, bool aug);
 
 // Function that takes user input for matrix numbers and establishes the structure.
     void construct(void);
 
+    void makeAugmented(void);
+
+    void unAugment(void);
     // Public debug access
     void setDebug(bool c);
 
     // Prints matrix in a semi formatted way
-    void printMatrix(void);  
+    void printMatrix(void);
 
     // Swap two rows. Sub is usually the "nums" data value but occasionally we use subsets of it
 	void flipRow(double ** sub, double firstrow, double secrow);
@@ -50,7 +58,7 @@ public:
     // Push a row to the bottom and pull the other ones up. Usually used for zero rows.
     void pushtoBottom(int pushrow);
 
-    // Row combinations. Sub is the set of nums we work with. 
+    // Row combinations. Sub is the set of nums we work with.
 	void addReplace(double ** sub, int tobereplaced, int tobeAdded, int pivotc);
 
     // Fully reduces matrix to echelon form recursively by starting at the bottom and going up each row.
@@ -77,8 +85,10 @@ public:
     // Prints inverse
     void printInverse(void);
 
-    // Checks if a full row is zero so that consistency can be checked by solveCheck. 
+    // Checks if a full row is zero so that consistency can be checked by solveCheck.
     void zeroRowCheck(void);
+
+    int  findDeterminant(void);
 };
 
 

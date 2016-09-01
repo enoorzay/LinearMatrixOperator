@@ -1,94 +1,179 @@
 #include "matrix.cpp"
-
+#include <unordered_map>
 using namespace std;
 
 class Menu{
 
-	public: 
+	public:
 
-	bool debug; 
-
+	bool debug;
+	unordered_map<string, matrix * >matrices;
+  matrix * lastMatrix;
 	Menu(bool debugging){
  		debug = debugging;
 	}
 
-	void prompt(){ 
-		cout << "Matrix Operations: " << endl;
+	void prompt(){
 
 		cout << "Please select an option: " << endl;
 
-		cout << "(1) Reduce a matrix to its echelon form." << endl;
+		cout << "(1) Declare new matrix." << endl;
 
-		cout << "(2) Multiply two matrices together." << endl;
+		cout << "(2) Act on existing matrix." << endl;
 
-		cout << "(3) Find the inverse of a matrix. (Must be square)" << endl;
+		cout << "(3) Search matrices." << endl;
 
-		cout << "(4) Exit" << endl;
+		cout << "(4) Exit." << endl;
 
-		cout << "You can always enter 0 to see this prompt again.";
-
-		cout << "(COMING SOON) - Determine linear dependence/indepence, All matrix mathematical basic operations between each other, mapping transformations, Finding solutions in vector/equation form, and determining span." << endl;
 
 		cout << "Please select an option: " << endl;
 
 	}
 
-	void reduce(){
+	void actions(){
+		cout << "Matrix Operations: " << endl;
+
+		cout << "(1) Reduce a matrix." << endl;
+
+		cout << "(2) Multiply two matrices." << endl;
+
+		cout << "(3) Invert a matrix." << endl;
+
+		cout << "(4) Find the determinant of a matrix." << endl;
+
+		cout << "(0) Go Back." << endl;
+
+		cout << "Please select an option: " << endl;
+
+		int decision;
+		cin >> decision;
+		if (decision == 1){
+		reduce();
+	 }
+
+	 else if (decision == 2){
+	 multiply();
+   }
+
+	 else if (decision == 3){
+		 inverse();
+	 }
+
+	 else if (decision == 4){
+		 det();
+	 }
+	 else if (decision == 0){
+		 prompt();
+	 }
+
+	 else{
+		 cout << " Unexpected input " << endl;
+		 actions();
+	 }
+
+	}
+
+	void declare(){
+		string name;
+		cout <<" Please enter the name of the matrix" << endl;
+		cin >> name;
 		int row;
 		int col;
-		cout << "Matrix Reduction: " << endl;
+		bool augmented;
+		cout << "Is this an augmented matrix? [y/n]"  << endl;
+		char choice;
+		cin >> choice;
+
+		if (choice == 'y' || choice == 'Y'){
+			augmented = true;
+		}
+		else{
+			augmented = false;
+		}
 
 		cout << "Enter # of matrix rows: " << endl;
 		cin >> row;
 		cout << "Enter # of matrix columns: " << endl;
-		cin >> col; 
-
-		matrix * A = new matrix(row,col, debug); 
+		cin >> col;
+		matrix * A = new matrix(name, row,col, debug, augmented);
 		A->construct();
-		cout << "FINAL MATRIX: " << endl;
+		matrices[name] = A;
+		lastMatrix = A;
+	}
+
+matrix * searchMatrices(){
+	string matname;
+	cout << "Enter name of matrix" << endl;
+	cin >> matname;
+	if (matrices[matname] != NULL){
+		matrix * temp  = matrices[matname];
+		temp->printMatrix();
+		lastMatrix = temp;
+		return temp;
+	}
+
+	else {
+		cout << "Matrix not found." << endl;
+		return NULL;
+	}
+}
+
+matrix * lastMatrixCheck(){
+	matrix * mat;
+	if (lastMatrix){
+		cout << "Use last matrix? (" << lastMatrix->name << ") [y/n]" << endl;
+		char choice;
+		cin >> choice;
+
+		if (choice == 'y' || choice == 'Y'){
+			mat = lastMatrix;
+			return mat;
+		}
+	}
+	else{
+		mat = searchMatrices();
+	}
+}
+	void reduce(){
+		matrix * A;
+		A = lastMatrixCheck();
+
+		if (!(A->augmented)){
+			if (debug){
+				cout << "Not an augmented matrix, augmenting.. " << endl;
+			}
+			A->makeAugmented();
+		}
 		A->rowReduct(A->nums);
 		A->printMatrix();
 		return;
-		
+
 	}
 
 	void multiply(){
-		int row;
-		int col; 
 
-		int secrow;
-		int seccol; 
+	matrix * A = lastMatrixCheck();
+cout << "Second matrix:" << endl;
 
-		cout << "Enter # of matrix rows: " << endl;
-		cin >> row;
-		cout << "Enter # of matrix columns: " << endl;
-		cin >> col; 
+	lastMatrix = NULL;
+	matrix * B = lastMatrixCheck();
 
-		matrix * A = new matrix(row,col, debug); 
-		A->construct();
+if (A->augmented){
+	A->unAugment();
+}
 
-
-		cout << "Enter # of matrix rows for matrix 2: " << endl;
-		cin >> secrow;
-		cout << "Enter # of matrix columns for matrix 2: " << endl;
-		cin >> seccol; 
-
-		if (col != secrow){
+if (B->augmented){
+	B->unAugment();
+}
+		if (A->columns != B->rows){
 			cout << "Error incompatible matrices" << endl;
-		} 
+			return;
+		}
 
 
-
-
-
-		matrix * B = new matrix(secrow,seccol, debug); 
-		B->construct();
-
-		matrix * C = new matrix(row, seccol, debug); 
-
+		matrix * C = new matrix("temp", A->rows,B->columns, debug, false);
 
 		C->matrixMult(A->nums, B->nums);
-
 
 		cout << "FINAL MATRIX: " << endl;
 		C->printMatrix();
@@ -98,19 +183,24 @@ class Menu{
 
 	void inverse(){
 
-		int size;
-		cout << "Enter size of matrix dimension: " << endl;
-		cin >> size;
-		matrix * A = new matrix(size,size, debug); 
-		A->construct();
-
-
+		matrix * A = lastMatrixCheck();
+		if (A->augmented){
+			A->unAugment();
+		}
 		A->createIdent();
 		A->rowReduct(A->nums);
 		cout << "FINAL MATRIX: " << endl;
 		A->printInverse();
-
 	return;
+
+	}
+
+	void det(){
+		matrix * A = lastMatrixCheck();
+		if (A->augmented){
+			A->unAugment();
+		}
+		cout << "Determinant is  " << A->findDeterminant() << endl;
 
 	}
 
@@ -150,15 +240,15 @@ int main(int argc, char* argv[])
 		}
 
 		else if (input == 1){
-			menu->reduce();
+			menu->declare();
 		}
 
 		else if (input == 2){
-			menu->multiply();
+			menu->actions();
 		}
 
 		else if (input == 3){
-			menu->inverse();
+			menu->searchMatrices();
 
 		}
 
@@ -171,16 +261,6 @@ int main(int argc, char* argv[])
 
 		}
 
-		cout << "Keep going? (Y/N): ";
-		cin >> choice;
-		if (choice == 'Y' || choice == 'y'){
-			keepgoing = true;
-		}
-
-		else{
-			keepgoing = false;
-		}
 
 	}
 }
-

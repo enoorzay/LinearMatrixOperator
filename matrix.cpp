@@ -5,28 +5,38 @@
 
 using namespace std;
 
-matrix::matrix(void) 
+matrix::matrix(void)
 {
 	rows = 0;
 	columns = 0;
 	inverting = false;
-    
+  findingdet = false;
+  totalflips = 0;
+  totalpivotcols = 0;
 }
 
 // Main constructor used
-matrix::matrix(double r, double c, bool debugging){
-	rows = r;
+matrix::matrix(string n, int r, int c, bool debugging, bool aug){
+name = n;
+  rows = r;
 	columns = c;
-	nums = new double*[(int)rows];	// Rows of matrix
+	nums = new double*[rows];	// Rows of matrix
 	debug = debugging;				// Debug msgs
-	totalpivotcols = 0;				
+	totalpivotcols = 0;
 	solnrows = 0;					// No rows reduced yet
+  augmented = aug;
 
-
+  if (!augmented){
+    columns++;  //allocate extra spot in case we ever become augmented and need it
+  }
 	// Allocates space for each column in every row.
-	for (double i = 0; i < rows; i++){
-		nums[(int)i] = new double[(int)columns];
+	for (int i = 0; i < rows; i++){
+		nums[i] = new double[columns];
 	}
+
+  if (!augmented){
+    columns--;
+  }
 }
 
 
@@ -42,7 +52,7 @@ void matrix::construct(void){
 
 
 // Prints matrix in somewhat formatted way and checks for invertibility.
-void matrix::printMatrix(void){ 
+void matrix::printMatrix(void){
 
 	if (debug){
 		if (invertible){
@@ -53,7 +63,13 @@ void matrix::printMatrix(void){
 
 	for (int i =0; i < rows; i++){
 		for (int j=0; j < columns; j++){
+      if (augmented){
+        if (j +1 == columns){
+            cout << " | ";
+        }
+      }
 			cout << nums[i][j] << " ";
+
 		}
 		cout << endl;
 	}
@@ -61,9 +77,33 @@ void matrix::printMatrix(void){
 
 }
 
+void matrix::makeAugmented(){
+  columns++;
+  if (nums[0][columns -1] != NULL ){
+    cout << "Use previous solution values for this matrix? [y/n]" << endl;
+    char choice;
+    cin >> choice;
+    if (choice == 'y' || choice == 'Y'){
+        augmented = true;
+        return;
+
+    }
+  }
+  cout << "Enter values of solution " << endl;
+  for (int i = 0; i < rows; i++){
+    cin >> nums[i][columns-1];
+  }
+  augmented = true;
+}
+
+void matrix::unAugment(){
+  columns--;
+  augmented = false;
+}
 
 // Swaps two rows
 void matrix::flipRow(double ** sub, double firstrow, double secrow){
+  totalflips++;
 	double  tempf[(int)columns];	// temp array for values of first row
 	double temps[(int)columns]; 	// temp array for values of second row
 
@@ -77,7 +117,7 @@ void matrix::flipRow(double ** sub, double firstrow, double secrow){
 		temps[(int)i] = sub[(int)secrow][(int)i];
 	}
 
-	// To switch, the values of rows are set to equal the opposite temp row array. 
+	// To switch, the values of rows are set to equal the opposite temp row array.
 	for (double i=0; i < columns; i++){
 		sub[(int)firstrow][(int)i] = temps[(int)i];
 		sub[(int)secrow][(int)i] = tempf[(int)i];
@@ -100,18 +140,21 @@ void matrix::pushtoBottom(int pushrow){
 // Adds a row to another to make its columns below the pivot column 0.
 void matrix::addReplace(double ** sub, int tobereplaced, int tobeAdded, int pivotc ){
 
-	// tobereplaced and tobeAdded are row numbers, we assume tobeAdded has a 1 in the pivot column and 
+	// tobereplaced and tobeAdded are row numbers, we assume tobeAdded has a 1 in the pivot column and
 	// add that row to tobereplaced until its values under the pivot column are 0.
 
 	//Gets negative value of tobereplaced column since for any x it can be, we want to multiply 1 by -x so that
 	// adding the rows gives a 0 under the pivot col.
 	double coef = 0 -nums[tobereplaced][pivotc];
 
-
+if (debug){
+  cout << "Adding " << coef << "*row" << tobeAdded << " to " << tobereplaced << endl;
+}
 	// Starting at the pivot column (since the rest will be 0 behind it) to the last column we add the appropriate row values
 	for (int i = pivotc; i < columns; i++){
 
 		double sum = ( (coef * nums[tobeAdded][i] ) + ( nums[tobereplaced][i]) );
+
 		nums[tobereplaced][i] = sum;
 	}
 }
@@ -119,13 +162,16 @@ void matrix::addReplace(double ** sub, int tobereplaced, int tobeAdded, int pivo
 
 // Is called for each row once in reduced form starting with last row bysolveCheck, once proven consistent.
 // It then calls recursively up to the top. Makes sure value at pivot column
-// is 1 and that the columns above it are 0. 
+// is 1 and that the columns above it are 0.
 bool matrix::reduced(int row){
 
 	int pivotcol = -1;
 
 	// Recursion is done we've reached the top
 	if (row == -1){
+    if  (debug){
+      cout << "Reached the top, done reducing!" << endl;
+    }
 		return true;
 	}
 
@@ -139,7 +185,7 @@ bool matrix::reduced(int row){
 		if (pivotcol != -1){
 			break;
 		}
-	} 
+	}
 
 	// If no pivot col found and at the top we're done. Otherwise move up a row, this is a zero row.
 	if (pivotcol == -1){
@@ -151,7 +197,7 @@ bool matrix::reduced(int row){
 		}
 	}
 
-	// We want the pivotcol value to be 1 so we divide its entire row by itself if it isnt 1. 
+	// We want the pivotcol value to be 1 so we divide its entire row by itself if it isnt 1.
 	if (nums[row][pivotcol] != 1 && nums[row][pivotcol] != 0){
 		for (int i =0; i < columns; i++){
 			nums[row][i] = nums[row][i] / nums[row][pivotcol];
@@ -159,15 +205,15 @@ bool matrix::reduced(int row){
 	}
 
 
-	// Excessive checks if we're done?
-	if (row == 0){
-		return true;
-	}
+
 
 	// Goes up from pivot col all the way to the top, making sure each column directly above it are 0, if not
-	// calls addReplace to make it so. 
+	// calls addReplace to make it so.
 	for (int i = row -1; i >= 0; i--){
 		if (nums[i][pivotcol] !=0){
+      if (debug){
+        cout << "Value above pivot column is not 0!" << endl;
+      }
 			addReplace(nums, i, row, pivotcol);
 
 			if (inverting){
@@ -176,7 +222,7 @@ bool matrix::reduced(int row){
 		}
 
 	}
-	// If done 
+	// If done
 	if (row <= 1){
 		return true;
 	}
@@ -188,7 +234,7 @@ bool matrix::reduced(int row){
 
 }
 
-//Checks if matrix is consistent, called by rowReduct after pivot columns are found. 
+//Checks if matrix is consistent, called by rowReduct after pivot columns are found.
 // If consistent, calls reduced func to rref.
 bool matrix::solveCheck(){
 	//debug msg
@@ -198,7 +244,7 @@ bool matrix::solveCheck(){
 		cout << "is consistent " << endl;
 	}
 
-	//Whether the row has been all zeroes 
+	//Whether the row has been all zeroes
 	//if last value isnt zero in augmented matrix inconsistent
 	bool zerorow;
 
@@ -222,7 +268,7 @@ bool matrix::solveCheck(){
 				cout << "Inconsistent" << endl;
 				return false;
 			}
-		
+
 		}
 	}
 
@@ -235,8 +281,8 @@ bool matrix::solveCheck(){
 		cout << "Consistent, reducing..." << endl;
 	}
 
-	// I'm not sure why this is minus two. But it works atm 
-	return reduced(rows-2);
+	// I'm not sure why this is minus two. But it works atm
+	return reduced(rows-1);
 }
 
 // Finds a pivot column in rows under Solnrow data value. Need to delegate to this more.
@@ -267,19 +313,19 @@ int matrix::findPivot(){
 					flipRow(nums, pivotrow, solnrows);
 				}
 
-				// Have to do the same to inverse if we're finding it. Instead of treating inverse like an augmented matrix, I just start it 
+				// Have to do the same to inverse if we're finding it. Instead of treating inverse like an augmented matrix, I just start it
 				// as an identity matrix separate from the main matrix, but as I reduce the matrix to its reduced form (eventually ideally becoming the identity matrix)
 				// I do the same to the identity matrix so that once the main matrix is the identity matrix, the inverse structure will correctly be the inverse of the matrix.
 
 				if (inverting){
 					flipRow(inverse, solnrows, pivotrow);
-				
+
 
 				}
 
-				return pivotcol; 
+				return pivotcol;
 			}
-			
+
 		}
 
 	}
@@ -296,7 +342,7 @@ bool matrix::rowReduct(double ** sub){
 	pivotcol = findPivot();
 	double pivotelement;
 	pivotelement = nums[solnrows][pivotcol];
-
+pivotelements.push_back(pivotelement);
 
 // If pivot column has nonzero and nonone number, divide the row by the pivot element so that its 1 at the pivot column.
 	for (int i =0; i < columns; i++){
@@ -315,12 +361,12 @@ bool matrix::rowReduct(double ** sub){
 	for (int i = solnrows+1; i < rows; i++){
 
 		if (debug){
-			cout << " Now checking values after row " << solnrows << "on column " << pivotcol << 
+			cout << " Now checking values after row " << solnrows << "on column " << pivotcol <<
 			" to make them 0 " << endl;
 		}
 
 
-		// uses the pivot column which now has a 1 as its value, and add multiples of that row to get 
+		// uses the pivot column which now has a 1 as its value, and add multiples of that row to get
 		// zeroes in all columns under it.
 
 		double temp = nums[i][pivotcol];
@@ -349,6 +395,9 @@ bool matrix::rowReduct(double ** sub){
 
 	// once down use solvecheck to ensure consistency before we try to make it rref.
 	else{
+    if(findingdet){
+      return true;
+    }
 		return solveCheck();
 
 
@@ -368,8 +417,8 @@ void matrix::matrixMult(double ** first, double ** sec){
 				if (debug){
 					cout << "Calculating row: " << srow << " column: " << scol << " of solution: " << endl;
 				}
-				// The number at this position in the product is the row of first * column of second.  
-				// Delegate to rowcolMult. So for row1 col1 of product its row1 of first times col1 of sec. 
+				// The number at this position in the product is the row of first * column of second.
+				// Delegate to rowcolMult. So for row1 col1 of product its row1 of first times col1 of sec.
 
 				nums[(int)srow][(int)scol] = rowcolMult(first, sec, srow, scol);
 
@@ -385,11 +434,11 @@ void matrix::matrixMult(double ** first, double ** sec){
 
 }
 
-// Called for each space row m col n in a product vector and solves for that space by multiplying 
+// Called for each space row m col n in a product vector and solves for that space by multiplying
 // row m of the first matrix with coln of the second.
 double matrix::rowcolMult(double ** first, double ** sec, double currentrow, double currentcol){
 		double sum = 0;
-		
+
 		// So move along the row of the first
 		for (double srow =0;srow < columns; srow++){
 
@@ -413,7 +462,7 @@ double matrix::rowcolMult(double ** first, double ** sec, double currentrow, dou
 		return sum;
 }
 
-//Establishes finding an inverse matrix. Sets up inverse as the identity matrix and sets inverting to true. 
+//Establishes finding an inverse matrix. Sets up inverse as the identity matrix and sets inverting to true.
 // For each operation we do to the main matrix to reduce it, we do the same to this identity matrix so that once the original
 // matrix is completely reduced this will be the inverse matrix.
 void matrix::createIdent(){
@@ -423,7 +472,7 @@ void matrix::createIdent(){
 	for (double i = 0; i < rows; i++){
 
 		inverse[(int)i] = new double[(int)columns];
-	}	
+	}
 
 	// Establishes identity matrix
 	for (int i = 0; i < rows; i++){
@@ -452,3 +501,47 @@ void matrix::printInverse(void){
 	}
 
 }
+
+int matrix::findDeterminant(void){
+  if (augmented){
+    unAugment();
+  }
+findingdet = true;
+rowReduct(nums);
+
+if (pivotelements.size() != columns){
+  cout << pivotelements.size() << endl;
+  cout << columns << endl;
+  return 0;
+}
+  double determinant;
+    /*
+      invertible = true;
+      for (int i = 0; i < rows; i++){
+        bool pivot = true;
+        for (int j = 0; j < columns; j++){
+            if (nums[i][j] != 0){
+              if (pivot == true){
+                determinant = determinant * nums[i][j];
+                pivot = false;
+
+              }
+            }
+        }
+      }
+      return determinant; */
+      determinant = pivotelements[0];
+      if (debug){
+        cout << "Determinant is " << pivotelements[0];
+      }
+      for (int i =1; i < pivotelements.size(); i++){
+          determinant= determinant * pivotelements[i];
+          if (debug){
+            cout << "  *  " << pivotelements[i];
+          }
+      }
+      cout << endl;
+      double coefficient = pow(-1, totalflips);
+      determinant = determinant * coefficient;
+      return determinant;
+  }
