@@ -10,7 +10,6 @@ matrix::matrix(void)
 	rows = 0;
 	columns = 0;
 	inverting = false;
-  findingdet = false;
   totalflips = 0;
   totalpivotcols = 0;
 }
@@ -25,6 +24,7 @@ name = n;
 	totalpivotcols = 0;
 	solnrows = 0;					// No rows reduced yet
   augmented = aug;
+  totalflips = 0;
 
   if (!augmented){
     columns++;  //allocate extra spot in case we ever become augmented and need it
@@ -79,7 +79,7 @@ void matrix::printMatrix(void){
 
 void matrix::makeAugmented(){
   columns++;
-  if (nums[0][columns -1] != NULL ){
+  if (nums[0][columns -1] != 0 ){
     cout << "Use previous solution values for this matrix? [y/n]" << endl;
     char choice;
     cin >> choice;
@@ -96,7 +96,9 @@ void matrix::makeAugmented(){
   augmented = true;
 }
 
+// Remove solution column
 void matrix::unAugment(){
+  // 1 less col
   columns--;
   augmented = false;
 }
@@ -395,9 +397,7 @@ pivotelements.push_back(pivotelement);
 
 	// once down use solvecheck to ensure consistency before we try to make it rref.
 	else{
-    if(findingdet){
-      return true;
-    }
+
 		return solveCheck();
 
 
@@ -502,38 +502,29 @@ void matrix::printInverse(void){
 
 }
 
+// Solves for the determinant
 int matrix::findDeterminant(void){
+
+  // Dont want to work with augmented matrix
   if (augmented){
     unAugment();
   }
-findingdet = true;
+
+  // Reduce the row, this function also fills up the vector for pivot elements, which are the diagonal
 rowReduct(nums);
 
+//Det is 0 if not invertible
 if (pivotelements.size() != columns){
-  cout << pivotelements.size() << endl;
-  cout << columns << endl;
   return 0;
 }
   double determinant;
-    /*
-      invertible = true;
-      for (int i = 0; i < rows; i++){
-        bool pivot = true;
-        for (int j = 0; j < columns; j++){
-            if (nums[i][j] != 0){
-              if (pivot == true){
-                determinant = determinant * nums[i][j];
-                pivot = false;
-
-              }
-            }
-        }
-      }
-      return determinant; */
       determinant = pivotelements[0];
+
       if (debug){
         cout << "Determinant is " << pivotelements[0];
       }
+
+      // Multiply the diagonal values
       for (int i =1; i < pivotelements.size(); i++){
           determinant= determinant * pivotelements[i];
           if (debug){
@@ -541,6 +532,8 @@ if (pivotelements.size() != columns){
           }
       }
       cout << endl;
+
+      // Flip signs for each pair of rows we intercanged
       double coefficient = pow(-1, totalflips);
       determinant = determinant * coefficient;
       return determinant;

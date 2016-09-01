@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <queue>
 #include <stack>
-#include <math.h>       
+#include <math.h>
 using namespace std;
 
 
@@ -29,12 +29,11 @@ public:
       int solnrows;   // Keeps track of reduced rows
       double ** inverse;  // Structure for inverse
       bool inverting;     // Whether we are looking for an inverse
-      bool invertible;
-      bool augmented;
-      bool findingdet;
-      int totalflips;
+      bool invertible;  // Whether its invertible
+      bool augmented; // Whether its currently augmented or not
+      int totalflips;   //  Helps calculate the sign of the determinant
       string name;    // used to identify
-      vector<double> pivotelements;
+      vector<double> pivotelements; // Stores the pivot elements, used for corner calculations
       matrix(void);
 
 // Constructor, n = names r= rows c = columns.. Debugging = choice of debug messages
@@ -43,9 +42,12 @@ public:
 // Function that takes user input for matrix numbers and establishes the structure.
     void construct(void);
 
+// Adds solution column to the matrix, making it augmented.
     void makeAugmented(void);
 
+// Removes the solution column
     void unAugment(void);
+
     // Public debug access
     void setDebug(bool c);
 
@@ -88,6 +90,7 @@ public:
     // Checks if a full row is zero so that consistency can be checked by solveCheck.
     void zeroRowCheck(void);
 
+    //Finds and returns the determinant
     int  findDeterminant(void);
 };
 
