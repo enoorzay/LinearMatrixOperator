@@ -1,4 +1,4 @@
-This program will (eventually) be able to perform all the primary operations learned in UCSD's Math 20F course, Linear Algebra. It is slowly gaining functionality, and can currently reduce a matrix to reduced echelon form and check for consistency, invert a matrix (if its invertible), find a matrices determinant, and do matrix multiplication.
+This program will (eventually) be able to operate on and solve systems of linear equations given in matrix form. It is slowly gaining functionality, and can currently reduce a matrix to reduced echelon form and check for consistency, invert a matrix (if its invertible), find a matrices determinant, and do matrix multiplication.
 
 *USAGE:*
 The program has prompts when run, initially bringing up a menu where an input of '1' allows declaration of a matrix, '2' brings up a menu for matrix operations, and '3' searches for a matrix by its name.
